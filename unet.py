@@ -58,7 +58,6 @@ class UNET(nn.Module):
         
         
         self.classifier = nn.Conv2d(numChan, self.n_class, kernel_size=1, stride=1, padding=0, )
-  
 
     def forward(self, x):
         torch.cuda.empty_cache()
