@@ -3,6 +3,10 @@ from torch import nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 from unet import UNET
 from Discriminator import Discriminator
+import torchvision.transforms as transforms
+from torch.nn import CrossEntropyLoss
+from torch.optim import Adam
+
 
 class pix2pix():
 
@@ -11,6 +15,11 @@ class pix2pix():
         numchannels = 64
         self.gen = UNET(numclasses, numchannels)
         self.disc = Discriminator()
+        self.criterion = CrossEntropyLoss()
+        self.transform = transforms.Compose([
+            transforms.functional.to_grayscale(img, num_output_channels=1)
+        ])
+
 
     def generate(self, greyscale):
         return self.gen.forward(greyscale)
@@ -24,24 +33,35 @@ class pix2pix():
 
         pass
 
-    def train(self, all_batches):
-        fake_label = 0
-        real_label = 1
-        for minibatch in all_batches:
-            #make BW versions
-            #generate coloration
-            generations = self.generate(____)
-            #concatenate generations w BW images
-            #concatenate ground truth w BW images
-            #create training batch for D: (BW-color concatenated images, both real and fake)
-            #run training data through D
-            #get predictions
-            #compare with ground truth labels
-            #backprop D
-            #pass generated examples back into D
-            #get predictions
-            #compare with ground truth labels (all 0's)
-            #backprop G
+    def train(self, all_batches, totalEpochs=50, genLr=0.0001, descLr=0.00005):
+        genOptimizer = Adam( list(self.gen.parameters()), lr=genLr)
+        discOptimizer = Adam( list(self.disc.parameters()), lr=descLr)
+        for epoch in totalEpochs:
+            for minibatch in all_batches:
+                #(images, features, height, width) assume black and white images are paired in the features chanel
+                origBW = blackandWhite(minibatch)
+                origColor = minibatch
 
-        #discriminate
-        #backprop G
+                # train descriminator
+                genColor = self.generate(origBW)
+                genPairs = torch.cat((origBW, genColor), 3)
+                origPairs = torch.cat((origBW, origColor), 3)
+
+                descTrainSet = torch.cat((genPairs, origPairs), 0)
+                genLabels = torch.zeros(genPairs.size()[0])
+                origLabels =  torch.ones(origPairs.size()[0])
+                labels = torch.cat(genLabels,origLabels),0))
+                preds = self.discriminate(descTrainSet)
+                batch_loss = self.criterion(preds, labels)
+
+                self.gen.zero_grad()
+                self.disc.zero_grad()
+                batch_loss.backward()
+                discOptimizer.step()
+
+                preds = self.discriminate(genPairs)
+                batch_loss = self.criterion(preds,  torch.ones(genLabels.size()[0]))
+                self.gen.zero_grad()
+                self.disc.zero_grad()
+                batch_loss.backward()
+                genOptimizer.step()
