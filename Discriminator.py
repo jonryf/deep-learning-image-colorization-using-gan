@@ -1,12 +1,51 @@
+import torchvision
 import torch.nn as nn
 import torch
 
+class Discriminator(nn.Module):
+    def __init__(self):
+        """
+        CNN outputs 1 if input image is real, 0 if it's fake
+        """
+        super(Discriminator, self).__init__()
+        num_classes=1 #binary problem
+
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1)
+        self.batch1 = nn.BatchNorm2d(64)
+        self.relu = nn.ReLU()
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1 )
+        self.batch2 = nn.BatchNorm2d(128)
+        self.relu = nn.ReLU()
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1 )
+        self.batch3 = nn.BatchNorm2d(256)
+        self.relu = nn.ReLU()
+        self.fc = nn.Linear(256, num_classes)
+        self.sig = nn.Sigmoid()
+
+
+    def __call__(self, images):
+        classify = nn.Sequential(
+            self.conv1,
+            self.batch1,
+            self.relu,
+            self.conv,
+            self.batch2,
+            self.relu,
+            self.conv3,
+            self.batch3,
+            self.relu,
+            self.fc,
+            self.sig
+        )
+        return classify(images)
+'''
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
         input_channels = 3
         n_layers = 3
         norm_layer = nn.BatchNorm2d
+        use_bias = True
         ndf = 64
         kw = 4
         padw = 1
@@ -36,3 +75,4 @@ class Discriminator(nn.Module):
     def forward(self, input):
         """Standard forward."""
         return self.model(input)
+'''

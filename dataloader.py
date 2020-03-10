@@ -48,15 +48,11 @@ class ImageDataset(Dataset):
 
         img = np.asarray(img)
 
-        color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
-
+        #color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
+        color_and_gray = np.concatenate((gray_three_channel, img), axis=3)
 
         # convert to tensor
         color_and_gray = torch.from_numpy(color_and_gray.copy()).float()
         gray_three_channel = torch.from_numpy(gray_three_channel.copy()).float()
-
-
-
-
 
         return color_and_gray, gray_three_channel
