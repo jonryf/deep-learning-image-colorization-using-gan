@@ -16,7 +16,10 @@ class ImageDataset(Dataset):
     def __init__(self, csv_file, transform, n_class=n_class):
         self.data      = pd.read_csv(csv_file)
         # Add any transformations here
-        self.transform = transform
+        self.transform = transforms.Compose([
+            transforms.Resize(254),
+            transforms.RandomCrop((254, 254), pad_if_needed=True),
+            transforms.ToTensor()])
 
     def __len__(self):
         return len(self.data)
@@ -31,7 +34,8 @@ class ImageDataset(Dataset):
         img_name   = './images/{}.jpeg'.format(self.data.columns[idx])
 
         img = Image.open(img_name).convert('RGB')
-
+        if self.transform is not None:
+            image = self.transform(image)
 
         # apply transformation
         img = self.transform_data(img)
