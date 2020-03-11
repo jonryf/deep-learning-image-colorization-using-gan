@@ -13,6 +13,47 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 
+def trainPix2Pix(model, data, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005):
+    genOptimizer = Adam( list(model.gen.parameters()), lr=genLr)
+    discOptimizer = Adam( list(model.disc.parameters()), lr=descLr)
+    criterion = CrossEntropyLoss()
+    model.gen.train()
+    model.disc.train()
+    for epoch in totalEpochs:
+        for minibatch, color_and_gray, gray_three_channel in enumerate(data):
+            gradientStep(model, (color_and_gray, gray_three_channel), criterion, genOptimizer, discOptimizer)
+
+
+# assumes minibatch is only colord images.
+def gradientStepPix2Pix(model, minibatch, criterion, genOptimizer, discOptimizer):
+    origBW = blackandWhite(minibatch)
+    origColor = minibatch
+
+    # train descriminator
+    genColor = model.generate(origBW)
+    genPairs = torch.cat((origBW, genColor), 3)
+    origPairs = torch.cat((origBW, origColor), 3)
+
+    descTrainSet = torch.cat((genPairs, origPairs), 0)
+    genLabels = torch.zeros(genPairs.size()[0])
+    origLabels =  torch.ones(origPairs.size()[0])
+    labels = torch.cat(genLabels,origLabels),0))
+    preds = model.discriminate(descTrainSet)
+    batch_loss = criterion(preds, labels)
+
+    model.gen.zero_grad()
+    model.disc.zero_grad()
+    batch_loss.backward()
+    discOptimizer.step()
+
+    preds = model.discriminate(genPairs)
+    batch_loss = criterion(preds,  torch.ones(genLabels.size()[0]))
+    model.gen.zero_grad()
+    model.disc.zero_grad()
+    batch_loss.backward()
+    genOptimizer.step()
+
+
 class pix2pix():
 
     def __init__(self, train_dataset, test_dataset):
@@ -21,9 +62,6 @@ class pix2pix():
         self.gen = UNET(numclasses, numchannels)
         self.disc = Discriminator()
         self.criterion = CrossEntropyLoss()
-        #self.transform = transforms.Compose([
-        #    transforms.functional.to_grayscale(img, num_output_channels=1)
-        #])
         self.trainData = []
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
@@ -36,7 +74,7 @@ class pix2pix():
 
     def log_metrics(self, epoch, loss):
         self.writer.add_scalar('training loss', loss, epoch)
-
+        self.trainData.append(loss)
 
     def generate(self, greyscale):
         return self.gen.forward(greyscale)
@@ -45,39 +83,4 @@ class pix2pix():
     def discriminate(self, img):
         #(images, features, height, width)
         # Return average - 1 value for all images
-
         patch_values = self.disc.forward(img)
-
-
-    def train(self, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005):
-        genOptimizer = Adam( list(self.gen.parameters()), lr=genLr)
-        discOptimizer = Adam( list(self.disc.parameters()), lr=descLr)
-        for epoch in totalEpochs:
-            for minibatch, color_and_gray, gray_three_channel in enumerate(self.train_dataset):
-                #(images, features, height, width) assume black and white images are paired in the features chanel
-                origBW = color_and_gray[1]
-                origColor = color_and_gray[0]
-
-                # train descriminator
-                genColor = self.generate(gray_three_channel)
-                genPairs = torch.cat((origBW, genColor), 3)
-                origPairs = torch.cat((origBW, origColor), 3)
-
-                descTrainSet = torch.cat((genPairs, origPairs), 0)
-                genLabels = torch.zeros(genPairs.size()[0])
-                origLabels =  torch.ones(origPairs.size()[0])
-                labels = torch.cat(genLabels,origLabels),0))
-                preds = self.discriminate(descTrainSet)
-                batch_loss = self.criterion(preds, labels)
-
-                self.gen.zero_grad()
-                self.disc.zero_grad()
-                batch_loss.backward()
-                discOptimizer.step()
-
-                preds = self.discriminate(genPairs)
-                batch_loss = self.criterion(preds,  torch.ones(genLabels.size()[0]))
-                self.gen.zero_grad()
-                self.disc.zero_grad()
-                batch_loss.backward()
-                genOptimizer.step()
