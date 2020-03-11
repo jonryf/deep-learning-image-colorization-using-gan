@@ -1,6 +1,8 @@
 import torch
 from torch import nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
+
+from settings import EPOCHS
 from unet import UNET
 from Discriminator import Discriminator
 import torchvision.transforms as transforms
@@ -52,7 +54,7 @@ def gradientStepPix2Pix(model, minibatch, criterion, genOptimizer, discOptimizer
 
 class pix2pix():
 
-    def __init__(self):
+    def __init__(self, train_dataset, test_dataset):
         numclasses = 3 #RGB
         numchannels = 64
         self.gen = UNET(numclasses, numchannels)
