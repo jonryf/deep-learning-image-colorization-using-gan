@@ -19,7 +19,7 @@ def trainPix2Pix(model, data, batchSize=1 ,totalEpochs=50, genLr=0.0001, descLr=
     for epoch in totalEpochs:
         for index in range(0, data.size()[0], batchSize):
             curData = data[index:index + batchSize,:,:,:]
-            gradientStep(model, genInputs, discImputs, genOptimizer, discOptimizer)
+            gradientStep(model, curData, criterion, genOptimizer, discOptimizer)
 
 
 # assumes minibatch is only colord images.
