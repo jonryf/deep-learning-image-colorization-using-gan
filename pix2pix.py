@@ -1,6 +1,8 @@
 import torch
 from torch import nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
+
+from settings import EPOCHS
 from unet import UNET
 from Discriminator import Discriminator
 import torchvision.transforms as transforms
@@ -10,17 +12,18 @@ from torch.optim import Adam
 
 class pix2pix():
 
-    def __init__(self):
+    def __init__(self, train_dataset, test_dataset):
         numclasses = 3 #RGB
         numchannels = 64
         self.gen = UNET(numclasses, numchannels)
         self.disc = Discriminator()
         self.criterion = CrossEntropyLoss()
-        self.transform = transforms.Compose([
-            transforms.functional.to_grayscale(img, num_output_channels=1)
-        ])
+        #self.transform = transforms.Compose([
+        #    transforms.functional.to_grayscale(img, num_output_channels=1)
+        #])
         self.trainData = []
-        self.
+        self.train_dataset = train_dataset
+        self.test_dataset = test_dataset
 
 
     def generate(self, greyscale):
@@ -33,16 +36,15 @@ class pix2pix():
 
         patch_values = self.disc.forward(img)
 
-        pass
 
-    def train(self, all_batches, totalEpochs=50, genLr=0.0001, descLr=0.00005):
+    def train(self, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005):
         genOptimizer = Adam( list(self.gen.parameters()), lr=genLr)
         discOptimizer = Adam( list(self.disc.parameters()), lr=descLr)
         for epoch in totalEpochs:
-            for minibatch in all_batches:
+            for minibatch, color_and_gray, gray_three_channel in enumerate(self.train_dataset):
                 #(images, features, height, width) assume black and white images are paired in the features chanel
-                origBW = blackandWhite(minibatch)
-                origColor = minibatch
+                origBW = color_and_gray[1]
+                origColor = color_and_gray[0]
 
                 # train descriminator
                 genColor = self.generate(origBW)

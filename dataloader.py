@@ -1,6 +1,6 @@
 import random
 
-from torch.utils.data import Dataset, DataLoader# For custom data-sets
+from torch.utils.data import Dataset, DataLoader  # For custom data-sets
 import torchvision.transforms as transforms
 import numpy as np
 from PIL import Image
@@ -10,11 +10,13 @@ import pandas as pd
 from collections import namedtuple
 import torchvision.transforms.functional as TF
 
+from settings import NUM_WORKERS
+
 
 class ImageDataset(Dataset):
 
-    def __init__(self, csv_file, transform, n_class=n_class):
-        self.data      = pd.read_csv(csv_file)
+    def __init__(self, csv_file):
+        self.data = pd.read_csv(csv_file)
         # Add any transformations here
         self.transform = transforms.Compose([
             transforms.Resize(254),
@@ -26,16 +28,14 @@ class ImageDataset(Dataset):
 
     @staticmethod
     def transform_data(image):
-
         return image
 
-
     def __getitem__(self, idx):
-        img_name   = './images/{}.jpeg'.format(self.data.columns[idx])
+        img_name = './images/{}.jpeg'.format(self.data.columns[idx])
 
         img = Image.open(img_name).convert('RGB')
         if self.transform is not None:
-            image = self.transform(image)
+            img = self.transform(img)
 
         # apply transformation
         img = self.transform_data(img)
@@ -48,7 +48,7 @@ class ImageDataset(Dataset):
 
         img = np.asarray(img)
 
-        #color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
+        # color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
         color_and_gray = np.concatenate((gray_three_channel, img), axis=3)
 
         # convert to tensor
@@ -56,3 +56,12 @@ class ImageDataset(Dataset):
         gray_three_channel = torch.from_numpy(gray_three_channel.copy()).float()
 
         return color_and_gray, gray_three_channel
+
+
+def get_loader(dataset, batch_size, shuffle):
+    return torch.utils.data.DataLoader(dataset=dataset,
+                                       batch_size=batch_size,
+                                       shuffle=shuffle,
+                                       num_workers=NUM_WORKERS)
+
+
