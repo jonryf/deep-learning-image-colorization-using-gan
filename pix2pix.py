@@ -1,4 +1,5 @@
 import torch
+import torchvision
 from torch import nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 
@@ -8,6 +9,8 @@ from Discriminator import Discriminator
 import torchvision.transforms as transforms
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
+from torch.utils.tensorboard import SummaryWriter
+
 
 
 class pix2pix():
@@ -24,6 +27,15 @@ class pix2pix():
         self.trainData = []
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
+        self.writer = SummaryWriter('runs/pix2pix')
+
+    def log_image(self, images):
+        # write to tensorboard
+        img_grid = torchvision.utils.make_grid(images)
+        self.writer.add_image('four_fashion_mnist_images', img_grid)
+
+    def log_metrics(self, epoch, loss):
+        self.writer.add_scalar('training loss', loss, epoch)
 
 
     def generate(self, greyscale):
@@ -47,7 +59,7 @@ class pix2pix():
                 origColor = color_and_gray[0]
 
                 # train descriminator
-                genColor = self.generate(origBW)
+                genColor = self.generate(gray_three_channel)
                 genPairs = torch.cat((origBW, genColor), 3)
                 origPairs = torch.cat((origBW, origColor), 3)
 
