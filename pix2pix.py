@@ -14,10 +14,11 @@ from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.image as mpimg
+import pytorch_ssim
 
 
 
-def trainPix2Pix(model, data, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005):
+def trainPix2Pix(model, data, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005, useAutoencoderLoss=True):
     genOptimizer = Adam( list(model.gen.parameters()), lr=genLr)
     discOptimizer = Adam( list(model.disc.parameters()), lr=descLr)
     criterion = SoftMarginLoss()
@@ -25,11 +26,11 @@ def trainPix2Pix(model, data, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005):
     model.disc.train()
     for epoch in range(totalEpochs):
         for minibatch, (color_and_gray, gray_three_channel) in enumerate(data):
-            gradientStepPix2Pix(model, color_and_gray.cuda(), gray_three_channel.cuda(), criterion, genOptimizer, discOptimizer)
+            gradientStepPix2Pix(model, color_and_gray.cuda(), gray_three_channel.cuda(), criterion, genOptimizer, discOptimizer, useAutoencoderLoss=useAutoencoderLoss)
 
 
 # assumes minibatch is only colord images.
-def gradientStepPix2Pix(model, color, gray, criterion, genOptimizer, discOptimizer):
+def gradientStepPix2Pix(model, color, gray, criterion, genOptimizer, discOptimizer, useAutoencoderLoss=True):
     origBW = gray
     origColor = color
 
@@ -37,13 +38,19 @@ def gradientStepPix2Pix(model, color, gray, criterion, genOptimizer, discOptimiz
     genColor = model.generate(origBW)
     genPairs = torch.cat((origBW, genColor), 3)
     origPairs = torch.cat((origBW, origColor), 3)
+    
+    # print perf
+    print(pytorch_ssim.ssim(genColor[:,:,:,:], origColor[:,:,:,:]))
 
     descTrainSet = torch.cat((genPairs, origPairs), 0)
-    genLabels = torch.zeros(genPairs.size()[0],1).cuda()
+    genLabels = (torch.ones(genPairs.size()[0],1).cuda()) * -1
     origLabels =  torch.ones(origPairs.size()[0],1).cuda()
     labels = torch.cat((genLabels,origLabels),0)
     preds = model.discriminate(descTrainSet)
+#     print(("labels: ", labels))
+    print(("predictions", preds))
     batch_loss = criterion(preds, labels)
+#     print(("batch_loss: ",batch_loss))
 
     model.gen.zero_grad()
     model.disc.zero_grad()
@@ -54,6 +61,14 @@ def gradientStepPix2Pix(model, color, gray, criterion, genOptimizer, discOptimiz
     genPairs = torch.cat((origBW, genColor), 3)
     preds = model.discriminate(genPairs)
     batch_loss = criterion(preds,  torch.ones(genLabels.size()[0], 1).cuda())
+    print(("batchLoss",batch_loss))
+    
+    if useAutoencoderLoss:
+        diff = genColor - origColor
+        diff = diff * diff
+        diff = torch.sum(diff)
+        batch_loss += diff
+    
     model.gen.zero_grad()
     model.disc.zero_grad()
     batch_loss.backward()
@@ -87,4 +102,7 @@ class pix2pix(nn.Module):
     def discriminate(self, img):
         #(images, features, height, width)
         # Return average - 1 value for all images
-        return self.disc(img)
+        ret = self.disc(img)
+        ret = torch.mean(ret, axis=2)
+        ret = torch.mean(ret, axis=2)
+        return ret
