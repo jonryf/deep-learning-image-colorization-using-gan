@@ -45,7 +45,7 @@ class ImageDataset(Dataset):
         return image
 
     def __getitem__(self, idx):
-        img_name = './images/{}.jpeg'.format(self.data[idx])
+        img_name = './PA5/images/{}.jpeg'.format(self.data[idx])
 
         img = Image.open(img_name).convert('RGB')
 
@@ -64,7 +64,8 @@ class ImageDataset(Dataset):
 
         img = np.asarray(img)
 
-        color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
+        color_and_gray = img
+#         color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
         #color_and_gray = np.concatenate((gray_three_channel, img), axis=3)
 
         # convert to tensor

@@ -2,6 +2,10 @@ import torchvision
 import torch.nn as nn
 import torch
 
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
 class Discriminator(nn.Module):
     def __init__(self):
         """
@@ -19,7 +23,7 @@ class Discriminator(nn.Module):
         self.conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1 )
         self.batch3 = nn.BatchNorm2d(256)
         self.relu = nn.ReLU()
-        self.fc = nn.Linear(256, num_classes)
+        self.fc = nn.Linear(25690112, num_classes)
         self.sig = nn.Sigmoid()
 
 
@@ -28,12 +32,13 @@ class Discriminator(nn.Module):
             self.conv1,
             self.batch1,
             self.relu,
-            self.conv,
+            self.conv2,
             self.batch2,
             self.relu,
             self.conv3,
             self.batch3,
             self.relu,
+            Flatten(),
             self.fc,
             self.sig
         )
