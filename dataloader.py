@@ -9,6 +9,7 @@ import math
 import pandas as pd
 from collections import namedtuple
 import torchvision.transforms.functional as TF
+import torchvision
 
 from settings import NUM_WORKERS
 
@@ -16,31 +17,40 @@ from settings import NUM_WORKERS
 class ImageDataset(Dataset):
 
     def __init__(self, csv_file):
-        self.data = pd.read_csv(csv_file)
+        #self.data = pd.read_csv(csv_file, header=None)
+        #csv = pd.read_csv(csv_file, header=None)
+        self.data = []
+        with open(csv_file) as f:
+            self.data = f.readlines()
+        self.data = [x.strip() for x in self.data]
         # Add any transformations here
-        self.transform = transforms.Compose([
-            transforms.Resize(254),
-            transforms.RandomCrop((254, 254), pad_if_needed=True),
-            transforms.ToTensor()])
 
     def __len__(self):
         return len(self.data)
 
     @staticmethod
     def transform_data(image):
+        h,w = image.size
+        size = min(h,w)
+        transform = transforms.Compose([
+            torchvision.transforms.CenterCrop(size),
+            torchvision.transforms.Resize(224)])
+        image = transform(image)
         return image
 
     def __getitem__(self, idx):
-        img_name = './images/{}.jpeg'.format(self.data.columns[idx])
+        img_name = './images/{}.jpeg'.format(self.data[idx])
 
         img = Image.open(img_name).convert('RGB')
-        if self.transform is not None:
-            img = self.transform(img)
+
+        gray_scale = img.convert('L')
 
         # apply transformation
         img = self.transform_data(img)
 
-        gray_scale = img.convert('L')
+        gray_scale = self.transform_data(gray_scale)
+
+        
 
         gray_scale = np.asarray(gray_scale)
 
@@ -48,8 +58,8 @@ class ImageDataset(Dataset):
 
         img = np.asarray(img)
 
-        # color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
-        color_and_gray = np.concatenate((gray_three_channel, img), axis=3)
+        color_and_gray = np.concatenate((gray_three_channel, img), axis=0)
+        #color_and_gray = np.concatenate((gray_three_channel, img), axis=3)
 
         # convert to tensor
         color_and_gray = torch.from_numpy(color_and_gray.copy()).float()
@@ -59,9 +69,6 @@ class ImageDataset(Dataset):
 
 
 def get_loader(dataset, batch_size, shuffle):
-    return torch.utils.data.DataLoader(dataset=dataset,
-                                       batch_size=batch_size,
-                                       shuffle=shuffle,
-                                       num_workers=NUM_WORKERS)
+    return torch.utils.data.DataLoader(dataset=dataset, batch_size=1, shuffle=shuffle, num_workers=NUM_WORKERS)
 
 
