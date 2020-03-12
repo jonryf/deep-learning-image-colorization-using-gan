@@ -13,6 +13,12 @@ import torchvision
 
 from settings import NUM_WORKERS
 
+def transformDimmensions(image):
+    s = image.size()
+    ret = torch.zeros(s[2], s[0], s[1])
+    for i in range(s[2]):
+        ret[i, :, :] = image[:,:,i]
+    return ret
 
 class ImageDataset(Dataset):
 
@@ -65,7 +71,11 @@ class ImageDataset(Dataset):
         color_and_gray = torch.from_numpy(color_and_gray.copy()).float()
         gray_three_channel = torch.from_numpy(gray_three_channel.copy()).float()
 
-        return color_and_gray, gray_three_channel
+
+        #transform images to proper dimmensions
+
+
+        return transformDimmensions(color_and_gray), transformDimmensions(gray_three_channel)
 
 
 def get_loader(dataset, batch_size, shuffle):
