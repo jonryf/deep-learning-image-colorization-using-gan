@@ -1,4 +1,5 @@
 import torch
+import torchvision
 from torch import nn as nn
 from torch.nn.utils.rnn import pack_padded_sequence
 
@@ -8,18 +9,19 @@ from Discriminator import Discriminator
 import torchvision.transforms as transforms
 from torch.nn import CrossEntropyLoss
 from torch.optim import Adam
+from torch.utils.tensorboard import SummaryWriter
 
 
-def trainPix2Pix(model, data, batchSize=1 ,totalEpochs=50, genLr=0.0001, descLr=0.00005):
+
+def trainPix2Pix(model, data, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005):
     genOptimizer = Adam( list(model.gen.parameters()), lr=genLr)
     discOptimizer = Adam( list(model.disc.parameters()), lr=descLr)
     criterion = CrossEntropyLoss()
     model.gen.train()
     model.disc.train()
     for epoch in totalEpochs:
-        for index in range(0, data.size()[0], batchSize):
-            curData = data[index:index + batchSize,:,:,:]
-            gradientStep(model, curData, criterion, genOptimizer, discOptimizer)
+        for minibatch, color_and_gray, gray_three_channel in enumerate(data):
+            gradientStep(model, (color_and_gray, gray_three_channel), criterion, genOptimizer, discOptimizer)
 
 
 # assumes minibatch is only colord images.
@@ -60,6 +62,19 @@ class pix2pix():
         self.gen = UNET(numclasses, numchannels)
         self.disc = Discriminator()
         self.criterion = CrossEntropyLoss()
+        self.trainData = []
+        self.train_dataset = train_dataset
+        self.test_dataset = test_dataset
+        self.writer = SummaryWriter('runs/pix2pix')
+
+    def log_image(self, images):
+        # write to tensorboard
+        img_grid = torchvision.utils.make_grid(images)
+        self.writer.add_image('four_fashion_mnist_images', img_grid)
+
+    def log_metrics(self, epoch, loss):
+        self.writer.add_scalar('training loss', loss, epoch)
+        self.trainData.append(loss)
 
     def generate(self, greyscale):
         return self.gen.forward(greyscale)
