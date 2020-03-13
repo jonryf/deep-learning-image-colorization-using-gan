@@ -56,6 +56,7 @@ class UNET(nn.Module):
         self.conv9_1   = nn.Conv2d((numChan * 2), numChan, kernel_size=3, stride=1, padding=1 )
         self.conv9_2   = nn.Conv2d(numChan, numChan, kernel_size=3, stride=1, padding=1 )
         
+        self.sig = torch.nn.Sigmoid()
         
         self.classifier = nn.Conv2d(numChan, self.n_class, kernel_size=1, stride=1, padding=0, )
 
@@ -101,4 +102,4 @@ class UNET(nn.Module):
         preds = self.classifier(outConv9)
         torch.cuda.empty_cache()
         
-        return torch.nn.Sigmoid(preds) * 255  # size=(N, n_class, x.H/1, x.W/1)
+        return self.sig(preds)  # size=(N, n_class, x.H/1, x.W/1)

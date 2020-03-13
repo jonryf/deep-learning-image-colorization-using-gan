@@ -76,7 +76,7 @@ class ImageDataset(Dataset):
         #transform images to proper dimmensions
 
 
-        return transformDimmensions(color_and_gray), transformDimmensions(gray_three_channel)
+        return transformDimmensions(color_and_gray) / 255, transformDimmensions(gray_three_channel) / 255
 
 
 def get_loader(dataset, batch_size, shuffle):

@@ -7,7 +7,7 @@ from settings import EPOCHS
 from unet import UNET
 from Discriminator import Discriminator
 import torchvision.transforms as transforms
-from torch.nn import SoftMarginLoss
+from torch.nn import SoftMarginLoss, BCELoss
 from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 
@@ -21,13 +21,13 @@ import pytorch_ssim
 def trainPix2Pix(model, data, totalEpochs=EPOCHS, genLr=0.0001, descLr=0.00005, useAutoencoderLoss=True):
     genOptimizer = Adam( list(model.gen.parameters()), lr=genLr)
     discOptimizer = Adam( list(model.disc.parameters()), lr=descLr)
-    criterion = SoftMarginLoss()
+    criterion = BCELoss()
     model.gen.train()
     model.disc.train()
     for epoch in range(totalEpochs):
+        print(epoch)
         for minibatch, (color_and_gray, gray_three_channel) in enumerate(data):
             gradientStepPix2Pix(model, color_and_gray.cuda(), gray_three_channel.cuda(), criterion, genOptimizer, discOptimizer, useAutoencoderLoss=useAutoencoderLoss)
-
 
 # assumes minibatch is only colord images.
 def gradientStepPix2Pix(model, color, gray, criterion, genOptimizer, discOptimizer, useAutoencoderLoss=True):
