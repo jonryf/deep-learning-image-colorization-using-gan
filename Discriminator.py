@@ -47,7 +47,7 @@ import torch
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
-        input_channels = 3
+        input_channels = 6
         n_layers = 3
         norm_layer = nn.BatchNorm2d
         use_bias = True
@@ -75,10 +75,6 @@ class Discriminator(nn.Module):
         ]
 
         sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
-        softmax = nn.Softmax2d()
-        sig = nn.Sigmoid()
-        # sequence += [softmax]
-        sequence += [sig]
         self.model = nn.Sequential(*sequence)
 
     def forward(self, input):

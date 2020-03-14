@@ -28,7 +28,7 @@ class ImageDataset(Dataset):
         self.data = []
         with open(csv_file) as f:
             self.data = f.readlines()
-        self.data = [x.strip() for x in self.data]
+        self.data = [x.strip() for x in self.data][:200]
         # Add any transformations here
 
     def __len__(self):
@@ -45,11 +45,15 @@ class ImageDataset(Dataset):
         return image
 
     def __getitem__(self, idx):
-        img_name = './PA5/images/{}.jpeg'.format(self.data[idx])
+        for i in range(30):
+            try: 
+                img_name = './images/{}.jpeg'.format(self.data[idx])
+                img = Image.open(img_name).convert('RGB')
+                gray_scale = img.convert('L')
+            except:
+                continue
+            break
 
-        img = Image.open(img_name).convert('RGB')
-
-        gray_scale = img.convert('L')
 
         # apply transformation
         img = self.transform_data(img)
@@ -81,5 +85,4 @@ class ImageDataset(Dataset):
 
 def get_loader(dataset, batch_size, shuffle):
     return torch.utils.data.DataLoader(dataset=dataset, batch_size=1, shuffle=shuffle, num_workers=NUM_WORKERS)
-
 
