@@ -84,5 +84,5 @@ class ImageDataset(Dataset):
 
 
 def get_loader(dataset, batch_size, shuffle):
-    return torch.utils.data.DataLoader(dataset=dataset, batch_size=1, shuffle=shuffle, num_workers=NUM_WORKERS)
+    return torch.utils.data.DataLoader(dataset=dataset, batch_size=26, shuffle=shuffle, num_workers=NUM_WORKERS)
 
